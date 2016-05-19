@@ -74,8 +74,13 @@ learnjs.flashElement = function(elem, content) {
   });
 }
 
+learnjs.landingView = function() {
+  return learnjs.template('landing-view');
+}
+
 learnjs.showView = function(hash) {
   var routes = {
+    '' : learnjs.landingView,
     '#problem': learnjs.problemView
   };
   var hashParts = hash.split('-');
@@ -88,12 +93,6 @@ learnjs.showView = function(hash) {
 learnjs.appOnReady = function() {
   window.onhashchange = function() {
     learnjs.showView(window.location.hash);
-  };
-
-  window.onpopstate = function() {
-    if (window.location.hash === '') {
-      window.location.reload();
-    }
   };
 
   learnjs.showView(window.location.hash);
