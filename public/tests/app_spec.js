@@ -27,4 +27,11 @@ describe('LearnJS', function() {
     learnjs.appOnReady();
     expect(learnjs.showView).toHaveBeenCalledWith(window.location.hash);
   });
+
+  it('subscribes to the hash change event', function() {
+    learnjs.appOnReady();
+    spyOn(learnjs, 'showView');
+    $(window).trigger('hashchange');
+    expect(learnjs.showView).toHaveBeenCalledWith(window.location.hash);
+  });
 });
