@@ -22,6 +22,13 @@ learnjs.appOnReady = function() {
   window.onhashchange = function() {
     learnjs.showView(window.location.hash);
   };
+
+  window.onpopstate = function() {
+    if (window.location.hash === '') {
+      window.location.reload();
+    }
+  };
+
   learnjs.showView(window.location.hash);
 }
 
