@@ -43,7 +43,7 @@ describe('LearnJS', function() {
 
       view.find('.answer').val('true');
       view.find('.check-btn').click();
-      expect(view.find('.result').text()).toEqual('Correct!');
+      expect(view.find('.correct-flash').length).toEqual(1);
     });
 
     it('rejects an incorrect answer', function() {
