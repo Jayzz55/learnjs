@@ -33,10 +33,10 @@ learnjs.problemView = function(data) {
   var view = learnjs.template('problem-view');
   var problemData = learnjs.problems[problemNumber - 1];
   var resultFlash = view.find('.result');
+  var answer = view.find('.answer');
 
   function checkAnswer() {
-    var answer = view.find('.answer').val();
-    var test = problemData.code.replace('__', answer) + 
+    var test = problemData.code.replace('__', answer.val()) + 
       ' problem();';
     return eval(test);
   }
@@ -46,6 +46,7 @@ learnjs.problemView = function(data) {
       var correctFlash = learnjs.buildCorrectFlash(problemNumber);
 
       learnjs.flashElement(resultFlash, correctFlash);
+      learnjs.saveAnswer(problemNumber, answer.val());
     } else {
       learnjs.flashElement(resultFlash, 'Incorrect!');
     }
@@ -217,6 +218,7 @@ learnjs.sendDbRequest = function(req, retry) {
         });
       });
     } else {
+      console.log(error);
       promise.reject(error);
     }
   });
@@ -228,4 +230,22 @@ learnjs.sendDbRequest = function(req, retry) {
   req.send();
 
   return promise;
+}
+
+learnjs.saveAnswer = function(problemId, answer) {
+  return learnjs.identity.then(function(identity) {
+    var db = new AWS.DynamoDB.DocumentClient();
+    var item = {
+      TableName: 'learnjs',
+      Item: {
+        userId: identity.id,
+        problemId: problemId,
+        answer: answer
+      }
+    };
+
+    return learnjs.sendDbRequest(db.put(item), function() {
+      return learnjs.saveAnswer(problemId, answer);
+    })
+  });
 }
