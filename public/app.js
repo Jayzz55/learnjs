@@ -203,3 +203,29 @@ function signOut() {
     console.log('User signed out.');
   });
 }
+
+learnjs.sendDbRequest = function(req, retry) {
+  var promise = new $.Deferred();
+
+  req.on('error', function(error) {
+    if (error.code === "CredentialsError") {
+      learnjs.identity.then(function(identity) {
+        return identity.refresh().then(function(){
+          return retry();
+        }, function() {
+          promise.reject(resp);
+        });
+      });
+    } else {
+      promise.reject(error);
+    }
+  });
+
+  req.on('success', function(resp) {
+    promise.resolve(resp.data);
+  });
+  
+  req.send();
+
+  return promise;
+}
