@@ -10,9 +10,9 @@
                     }, 
                     "Effect": "Allow", 
                     "Condition": {
-                        "StringEquals": {
-                            "cognito-identity.amazonaws.com:aud": ""
-                        }, 
+                      "StringEquals": {
+                        "cognito-identity.amazonaws.com:aud": "us-east-1:a756df8a-918a-401b-96c7-f83e15822453"
+                      }, 
                         "ForAnyValue:StringLike": {
                             "cognito-identity.amazonaws.com:amr": "authenticated"
                         }

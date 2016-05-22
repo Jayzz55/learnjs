@@ -119,6 +119,8 @@ learnjs.appOnReady = function() {
 
   learnjs.showView(window.location.hash);
   learnjs.identity.done(learnjs.addProfileLink);
+  learnjs.identity.done(learnjs.toggleSignInButton);
+  learnjs.identity.done(learnjs.addSignOutLink);
 }
 
 learnjs.profileView = function() {
@@ -135,7 +137,17 @@ learnjs.addProfileLink = function(profile) {
   var link = learnjs.template('profile-link');
 
   link.find('a').text(profile.email);
-  $('.signin-bar').prepend(link);
+  $('.signin-bar').append(link);
+}
+
+learnjs.addSignOutLink = function() {
+  var link = learnjs.template('signout-link');
+
+  $('.profile-link').append(link);
+}
+
+learnjs.toggleSignInButton = function() {
+  $('.g-signin2').toggle();
 }
 
 learnjs.awsRefresh = function() {
@@ -144,11 +156,8 @@ learnjs.awsRefresh = function() {
   AWS.config.credentials.refresh(function(err) {
     if (err) {
       deferred.reject(err);
-      console.log('problem:');
-      console.log(err);
     } else {
       deferred.resolve(AWS.config.credentials.identityId);
-      console.log('hooray!');
     }
   });
   return deferred.promise();
@@ -188,3 +197,9 @@ function googleSignIn(googleUser) {
   }
 }
 
+function signOut() {
+  var auth2 = gapi.auth2.getAuthInstance();
+  auth2.signOut().then(function () {
+    console.log('User signed out.');
+  });
+}
