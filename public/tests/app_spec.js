@@ -1,4 +1,13 @@
 describe('LearnJS', function() {
+  var fakeWorker;
+  beforeEach(function() {
+    fakeWorker = {
+      postMessage: function(msg) { fakeWorker.onmessage({data: eval(msg)}) }
+    };
+    spyOn(window, 'Worker').and.returnValue(fakeWorker);
+    learnjs.identity = new $.Deferred();
+  });
+
   it('can show a problem view', function() {
     learnjs.showView('#problem-1');
     expect($('.view-container .problem-view').length).toEqual(1);
@@ -54,4 +63,102 @@ describe('LearnJS', function() {
       expect(view.find('.result').text()).toEqual('Incorrect!');
     });
   });
+
+  describe('awsRefresh', function() {
+    var callbackArg, fakeCreds;
+
+    beforeEach(function() {
+      fakeCreds = jasmine.createSpyObj('creds', ['refresh']);
+      fakeCreds.identityId = 'COGNITO_ID';
+      AWS.config.credentials = fakeCreds;
+      fakeCreds.refresh.and.callFake(function(cb) { cb(callbackArg); });
+    });
+
+    it('returns a promise that resolves on success', function(done) {
+      learnjs.awsRefresh().then(function(id) {
+        expect(fakeCreds.identityId).toEqual('COGNITO_ID');
+      }).then(done, fail);
+    });
+
+    it('rejects the promise on a failure', function(done) {
+      callbackArg = 'error';
+      learnjs.awsRefresh().fail(function(err) {
+        expect(err).toEqual("error");
+        done();
+      });
+    });
+  });
+
+  describe('googleSignIn callback', function() {
+    var user, profile;
+
+    beforeEach(function() {
+      profile = jasmine.createSpyObj('profile', ['getEmail']);
+      var refreshPromise = new $.Deferred().resolve("COGNITO_ID").promise();
+      spyOn(learnjs, 'awsRefresh').and.returnValue(refreshPromise);
+      spyOn(AWS, 'CognitoIdentityCredentials');
+      user = jasmine.createSpyObj('user',
+          ['getAuthResponse', 'getBasicProfile']);
+      user.getAuthResponse.and.returnValue({id_token: 'GOOGLE_ID'});
+      user.getBasicProfile.and.returnValue(profile);
+      profile.getEmail.and.returnValue('foo@bar.com');
+      googleSignIn(user);
+    });
+
+    it('sets the AWS region', function() {
+      expect(AWS.config.region).toEqual('us-east-1');
+    });
+
+    it('sets the identity pool ID and Google ID token', function() {
+      expect(AWS.CognitoIdentityCredentials).toHaveBeenCalledWith({
+        IdentityPoolId: learnjs.poolId,
+        Logins: {
+          'accounts.google.com': 'GOOGLE_ID'
+        }
+      });
+    });
+
+    it('fetches the AWS credentials and resolved the deferred', function(done) {
+      learnjs.identity.done(function(identity) {
+        expect(identity.email).toEqual('foo@bar.com');
+        expect(identity.id).toEqual('COGNITO_ID');
+        done();
+      });
+    });
+
+    describe('refresh', function() {
+      var instanceSpy;
+      beforeEach(function() {
+        AWS.config.credentials = {params: {Logins: {}}};
+        var updateSpy = jasmine.createSpyObj('userUpdate', ['getAuthResponse']);
+        updateSpy.getAuthResponse.and.returnValue({id_token: "GOOGLE_ID"});
+        instanceSpy = jasmine.createSpyObj('instance', ['signIn']);
+        instanceSpy.signIn.and.returnValue(Promise.resolve(updateSpy));
+        var auth2Spy = jasmine.createSpyObj('auth2', ['getAuthInstance']);
+        auth2Spy.getAuthInstance.and.returnValue(instanceSpy);
+        window.gapi = { auth2: auth2Spy };
+      });
+
+      it('returns a promise when token is refreshed', function(done) {
+        learnjs.identity.done(function(identity) {
+          identity.refresh().then(function() {
+            expect(AWS.config.credentials.params.Logins).toEqual({
+              'accounts.google.com': "GOOGLE_ID"
+            });
+            done();
+          });
+        });
+      });
+
+      it('does not re-prompt for consent when refreshing the token in', function(done) {
+        learnjs.identity.done(function(identity) {
+          identity.refresh().then(function() {
+            expect(instanceSpy.signIn).toHaveBeenCalledWith({prompt: 'login'});
+            done();
+          });
+        });
+      });
+    });
+  });
+
 });
