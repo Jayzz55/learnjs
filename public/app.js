@@ -97,7 +97,8 @@ learnjs.showView = function(hash) {
   var routes = {
     '' : learnjs.landingView,
     '#' : learnjs.landingView,
-    '#problem': learnjs.problemView
+    '#problem': learnjs.problemView,
+    '#profile': learnjs.profileView
   };
   var hashParts = hash.split('-');
   var viewFn = routes[hashParts[0]];
@@ -117,6 +118,24 @@ learnjs.appOnReady = function() {
   };
 
   learnjs.showView(window.location.hash);
+  learnjs.identity.done(learnjs.addProfileLink);
+}
+
+learnjs.profileView = function() {
+  var view = learnjs.template('profile-view');
+
+  learnjs.identity.done(function(identity) {
+    view.find('.email').text(identity.email);
+  });
+  
+  return view;
+}
+
+learnjs.addProfileLink = function(profile) {
+  var link = learnjs.template('profile-link');
+
+  link.find('a').text(profile.email);
+  $('.signin-bar').prepend(link);
 }
 
 learnjs.awsRefresh = function() {
@@ -125,8 +144,11 @@ learnjs.awsRefresh = function() {
   AWS.config.credentials.refresh(function(err) {
     if (err) {
       deferred.reject(err);
+      console.log('problem:');
+      console.log(err);
     } else {
       deferred.resolve(AWS.config.credentials.identityId);
+      console.log('hooray!');
     }
   });
   return deferred.promise();
