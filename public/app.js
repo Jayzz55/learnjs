@@ -36,20 +36,32 @@ learnjs.problemView = function(data) {
   var answer = view.find('.answer');
 
   function checkAnswer() {
-    var test = problemData.code.replace('__', answer.val()) + 
-      ' problem();';
-    return eval(test);
+    var def = $.Deferred();
+    var test = problemData.code.replace('__', answer.val()) + ' problem();';
+    var worker = new Worker('worker.js');
+
+    worker.onmessage = function(e) {
+      if (e.data) {
+        def.resolve(e.data);
+      } else {
+        def.reject();
+      }
+    }
+    worker.postMessage(test);
+
+    return def;
   }
 
   function checkAnswerClick() {
-    if (checkAnswer()) {
+    checkAnswer().done(function() {
       var correctFlash = learnjs.buildCorrectFlash(problemNumber);
 
       learnjs.flashElement(resultFlash, correctFlash);
       learnjs.saveAnswer(problemNumber, answer.val());
-    } else {
+    }).fail(function() {
       learnjs.flashElement(resultFlash, 'Incorrect!');
-    }
+    });
+
     return false;
   }
 
@@ -210,7 +222,7 @@ function signOut() {
   });
 }
 
-learnjs.sendDbRequest = function(req, retry) {
+learnjs.sendAwsRequest = function(req, retry) {
   var promise = new $.Deferred();
 
   req.on('error', function(error) {
@@ -249,7 +261,7 @@ learnjs.saveAnswer = function(problemId, answer) {
       }
     };
 
-    return learnjs.sendDbRequest(db.put(item), function() {
+    return learnjs.sendAwsRequest(db.put(item), function() {
       return learnjs.saveAnswer(problemId, answer);
     })
   });
@@ -266,7 +278,7 @@ learnjs.fetchAnswer = function(problemId) {
       }
     };
 
-    return learnjs.sendDbRequest(db.get(item), function() {
+    return learnjs.sendAwsRequest(db.get(item), function() {
       return learnjs.fetchAnswer(problemId);
     })
   });
@@ -284,8 +296,22 @@ learnjs.countAnswers = function(problemId) {
       }
     }
 
-    return learnjs.sendDbRequest(db.scan(params), function() {
+    return learnjs.sendAwsRequest(db.scan(params), function() {
       return learnjs.countAnswers(problemId);
     })
+  });
+}
+
+learnjs.popularAnswers = function(problemId) {
+  return learnjs.identity.then(function() {
+    var lambda = new AWS.Lambda();
+    var params = {
+      FunctionName: 'popularAnswers',
+      Payload: JSON.stringify({problemNumber: problemId})
+    };
+
+    return learnjs.sendAwsRequest(lambda.invoke(params), function() {
+      return learnjs.popularAnswers(problemId);
+    });
   });
 }
