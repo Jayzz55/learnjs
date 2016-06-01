@@ -1,13 +1,13 @@
 {
-    "CodeSha256": "bMV18F89V57PyvhCoffnrvpBUTdInADRnFik9MUfLlk=", 
+    "CodeSha256": "ZS99/lW/8JSD2wpl2rTnWTDVKvUVjZXAvPMZRWD1PjU=", 
     "FunctionName": "popularAnswers", 
-    "CodeSize": 789679, 
+    "CodeSize": 790130, 
     "MemorySize": 512, 
     "FunctionArn": "arn:aws:lambda:us-east-1:037835678184:function:popularAnswers", 
-    "Version": "1", 
+    "Version": "$LATEST", 
     "Role": "arn:aws:iam::037835678184:role/learnjs_lambda_exec", 
     "Timeout": 5, 
-    "LastModified": "2016-05-29T13:56:56.584+0000", 
+    "LastModified": "2016-05-29T14:48:43.126+0000", 
     "Handler": "index.popularAnswers", 
     "Runtime": "nodejs", 
     "Description": ""
